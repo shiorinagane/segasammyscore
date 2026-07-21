@@ -134,12 +134,6 @@
     gap: 10px;
   }
 
-  .podium-secondary {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
   .rank-card {
     background: var(--paper);
     border-radius: 16px;
@@ -380,37 +374,7 @@
   <!-- ランキング本体 -->
   <div id="ranking" class="hidden">
     <div class="podium-wrap">
-      <div class="podium">
-        <div class="rank-card first hidden" id="card1">
-          <img class="rank-badge" src="img/rank1.png" alt="1位">
-          <div class="rank-team" id="team1"></div>
-          <div class="stat">
-            <div class="rank-score-label">TOTAL POINT</div>
-            <div class="rank-score" id="score1"></div>
-            <div class="rank-holes hidden" id="holes1"></div>
-          </div>
-        </div>
-        <div class="podium-secondary" id="podium-secondary">
-          <div class="rank-card second hidden" id="card2">
-            <img class="rank-badge" src="img/rank2.png" alt="2位">
-            <div class="rank-team" id="team2"></div>
-            <div class="stat">
-              <div class="rank-score-label">POINT</div>
-              <div class="rank-score" id="score2"></div>
-              <div class="rank-holes hidden" id="holes2"></div>
-            </div>
-          </div>
-          <div class="rank-card third hidden" id="card3">
-            <img class="rank-badge" src="img/rank3.png" alt="3位">
-            <div class="rank-team" id="team3"></div>
-            <div class="stat">
-              <div class="rank-score-label">POINT</div>
-              <div class="rank-score" id="score3"></div>
-              <div class="rank-holes hidden" id="holes3"></div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <div class="podium" id="podium"></div>
     </div>
 
     <div class="table-card hidden" id="table">
@@ -463,19 +427,48 @@ function formatHoles(holes) {
   return holes + '/' + HOLES_MAX;
 }
 
-function setCard(i, row) {
-  const card = document.getElementById('card' + i);
-  if (!row) { card.classList.add('hidden'); return; }
-  card.classList.remove('hidden');
-  document.getElementById('team' + i).textContent = row.team;
+const PODIUM_VARIANT = { '1': 'first', '2': 'second', '3': 'third' };
+
+function createPodiumCard(row) {
+  const variant = PODIUM_VARIANT[row.rank];
+  const card = document.createElement('div');
+  card.className = 'rank-card ' + variant;
+
+  const badge = document.createElement('img');
+  badge.className = 'rank-badge';
+  badge.src = 'img/rank' + row.rank + '.png';
+  badge.alt = row.rank + '位';
+  card.appendChild(badge);
+
+  const team = document.createElement('div');
+  team.className = 'rank-team';
+  team.textContent = row.team;
+  card.appendChild(team);
+
+  const stat = document.createElement('div');
+  stat.className = 'stat';
+
+  const label = document.createElement('div');
+  label.className = 'rank-score-label';
+  label.textContent = variant === 'first' ? 'TOTAL POINT' : 'POINT';
+  stat.appendChild(label);
+
   const p = formatPoint(row.point);
-  const el = document.getElementById('score' + i);
-  el.textContent = p.text;
-  el.classList.toggle('zero', p.cls === 'zero');
+  const score = document.createElement('div');
+  score.className = 'rank-score' + (p.cls === 'zero' ? ' zero' : '');
+  score.textContent = p.text;
+  stat.appendChild(score);
+
   const holesText = formatHoles(row.holes);
-  const holesEl = document.getElementById('holes' + i);
-  holesEl.textContent = holesText ? '成立H ' + holesText : '';
-  holesEl.classList.toggle('hidden', holesText === '');
+  if (holesText) {
+    const holes = document.createElement('div');
+    holes.className = 'rank-holes';
+    holes.textContent = '成立H ' + holesText;
+    stat.appendChild(holes);
+  }
+
+  card.appendChild(stat);
+  return card;
 }
 
 function render(data) {
@@ -490,20 +483,21 @@ function render(data) {
   }
 
   const rows = data.rows || [];
-  setCard(1, rows[0]);
-  setCard(2, rows[1]);
-  setCard(3, rows[2]);
-  document.getElementById('podium-secondary').classList.toggle('hidden', rows.length < 2);
+  const podiumRows = rows.filter(function (row) { return PODIUM_VARIANT[row.rank]; });
+  const tableRows = rows.filter(function (row) { return !PODIUM_VARIANT[row.rank]; });
 
-  const rest = rows.slice(3);
+  const podium = document.getElementById('podium');
+  podium.innerHTML = '';
+  podiumRows.forEach(function (row) { podium.appendChild(createPodiumCard(row)); });
+
   const table = document.getElementById('table');
   const container = document.getElementById('rows');
   container.innerHTML = '';
-  if (rest.length === 0) {
+  if (tableRows.length === 0) {
     table.classList.add('hidden');
   } else {
     table.classList.remove('hidden');
-    rest.forEach(function (row) {
+    tableRows.forEach(function (row) {
       const div = document.createElement('div');
       div.className = 'row';
       const p = formatPoint(row.point);
