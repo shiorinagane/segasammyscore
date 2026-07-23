@@ -12,12 +12,11 @@
  *   A3: 説明文      B3: 10:00時点のチーム戦最新順位をお届けします。
  *   A4: 更新時刻    B4: 7/23 10:40
  *   A5: 表示数      B5: 表示したい順位まで数値で入力（例：10）。空欄なら全組表示
- *   6行目: ヘッダー（順位｜チーム名｜ポイント｜成立ホール）
- *   7行目〜: データ（A:順位 B:チーム名 C:ポイント D:成立ホール）
+ *   6行目: ヘッダー（順位｜チーム名｜ポイント）
+ *   7行目〜: データ（A:順位 B:チーム名 C:ポイント）
  *     ・チーム名が空になった行で読み込み終了
  *     ・順位が空欄なら上から自動連番。同点タイは順位を手入力すればそのまま出る
  *     ・データは毎回全組入力してOK。表示数（B5）で何位まで見せるかを別途絞れる
- *     ・成立ホール（D列）は数字のみ入力（例：14）。ページ側で自動的に「14/18」と表示される。空欄ならページに表示しない
  * ──────────────────────────────────
  */
 
@@ -76,8 +75,7 @@ function buildResponse_() {
     allRows.push({
       rank: rank,
       team: team,
-      point: toPoint_(values[i][2]), // C列
-      holes: toHoles_(values[i][3]) // D列 成立ホール
+      point: toPoint_(values[i][2]) // C列
     });
   }
 
@@ -130,17 +128,6 @@ function toDisplayCount_(v) {
   if (s === '') return null;
   const n = Number(s);
   return (!isNaN(n) && n > 0) ? Math.floor(n) : null;
-}
-
-/**
- * 成立ホールを数値に正規化。空欄・数値でない場合は null（ページ側で非表示）
- */
-function toHoles_(v) {
-  if (typeof v === 'number') return v;
-  const s = toText_(v);
-  if (s === '') return null;
-  const n = Number(s);
-  return isNaN(n) ? null : n;
 }
 
 /**
